@@ -25,11 +25,11 @@ decode_claims(EncodedToken, Key) ->
         Verified ->
             json:decode(base64url:decode(Claims));
         true ->
-            throw({verification, <<"Verification failed">>})
+            throw({bad_request, <<"JWT signature verification failed">>})
     end.
 
 split(EncodedToken) ->
     case binary:split(EncodedToken, <<$.>>, [global]) of
         [_, _, _] = Split -> Split;
-        _ -> throw({bad_request, <<"Malformed token">>})
+        _ -> throw({bad_request, <<"Malformed JWT">>})
     end.
