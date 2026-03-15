@@ -1,6 +1,6 @@
 -module(jwt).
 
--export([encode/3, nada/1]).
+-export([encode/3, decode_claims/2]).
 
 -include_lib("public_key/include/public_key.hrl").
 
@@ -13,5 +13,23 @@ encode(Header, Claims, Key) ->
     EncodedSignature = base64url:encode(Signature),
     {ok, <<Message/binary, $., EncodedSignature/binary>>}.
 
-nada(_) ->
-    ok.
+decode_claims(EncodedToken, Key) ->
+    [Header, Claims, Signature] = split(EncodedToken),
+    Verified = public_key:verify(
+        <<Header/binary, $., Claims/binary>>,
+        sha256,
+        base64url:decode(Signature),
+        Key
+    ),
+    if
+        Verified ->
+            json:decode(base64url:decode(Claims));
+        true ->
+            throw({verification, <<"Verification failed">>})
+    end.
+
+split(EncodedToken) ->
+    case binary:split(EncodedToken, <<$.>>, [global]) of
+        [_, _, _] = Split -> Split;
+        _ -> throw({bad_request, <<"Malformed token">>})
+    end.
