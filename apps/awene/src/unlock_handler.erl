@@ -53,6 +53,7 @@ resource_exists(Req, State) ->
 authentication_state(Req, State) ->
     Locked = json:encode(#{<<"status">> => <<"locked">>}),
     Unlocked = json:encode(#{<<"status">> => <<"unlocked">>}),
+    Error = json:encode(#{<<"status">> => <<"auth failed">>}),
     case persistent_term:get(admin_info, undefined) of
         undefined ->
             {Locked, Req, State};
@@ -62,7 +63,7 @@ authentication_state(Req, State) ->
                     true ->
                         Unlocked;
                     _ ->
-                        Locked
+                        Error
                 end,
             {Status, Req, State}
     end.
