@@ -46,18 +46,6 @@ authenticate(Req0, State) ->
             {false, cowboy_req:set_resp_body(Status, Req), State}
     end.
 
-locked() ->
-    json:encode(#{<<"status">> => <<"locked">>}).
-
-unlocked() ->
-    json:encode(#{<<"status">> => <<"unlocked">>}).
-
-authfailed() ->
-    json:encode(#{<<"status">> => <<"auth failed">>}).
-
-badformat() ->
-    json:encode(#{<<"status">> => <<"invalid request">>}).
-
 set_status(Req, #{<<"username">> := User, <<"password">> := Pass, <<"url">> := Url}) ->
     ParsedQs = cowboy_req:parse_qs(Req),
     case proplists:get_value(<<"clear">>, ParsedQs) of
@@ -77,3 +65,15 @@ read_body(Req0, Acc) ->
         {more, Data, Req} ->
             read_body(Req, <<Acc/binary, Data/binary>>)
     end.
+
+locked() ->
+    json:encode(#{<<"status">> => <<"locked">>}).
+
+unlocked() ->
+    json:encode(#{<<"status">> => <<"unlocked">>}).
+
+authfailed() ->
+    json:encode(#{<<"status">> => <<"auth failed">>}).
+
+badformat() ->
+    json:encode(#{<<"status">> => <<"invalid request">>}).
