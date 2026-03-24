@@ -4,14 +4,11 @@
 -export([
     init/2,
     allowed_methods/2,
-    content_types_provided/2,
-    content_types_accepted/2,
-    resource_exists/2
+    content_types_accepted/2
 ]).
 
 %% Handler specific callbacks
 -export([
-    authentication_state/2,
     authenticate/2
 ]).
 
@@ -19,82 +16,58 @@ init(Req, _) ->
     {cowboy_rest, Req, #{}}.
 
 allowed_methods(Req, State) ->
-    {[<<"PUT">>, <<"GET">>], Req, State}.
+    {[<<"PUT">>], Req, State}.
 
-content_types_provided(Req, State) ->
+content_types_accepted(Req, State) ->
     {
         [
-            {<<"application/json">>, authentication_state}
+            {{<<"application">>, <<"json">>, []}, authenticate}
         ],
         Req,
         State
     }.
 
-content_types_accepted(Req, State) ->
-    {[{{<<"application">>, <<"json">>, []}, authenticate}], Req, State}.
-
-resource_exists(Req, State) ->
-    ParsedQs = cowboy_req:parse_qs(Req),
-    Existence =
-        case proplists:get_value(<<"url">>, ParsedQs) of
-            undefined ->
-                couch:exists();
-            EncodedUrl ->
-                ReqUrl = uri_string:percent_decode(EncodedUrl),
-                couch:exists(ReqUrl)
-        end,
-    case Existence of
-        {ok, 200, Url} ->
-            {true, Req, State#{<<"url">> => Url}};
-        _ ->
-            {false, Req, State}
-    end.
-
-authentication_state(Req, State) ->
-    Locked = json:encode(#{<<"status">> => <<"locked">>}),
-    Unlocked = json:encode(#{<<"status">> => <<"unlocked">>}),
-    Error = json:encode(#{<<"status">> => <<"auth failed">>}),
-    case persistent_term:get(admin_info, undefined) of
-        undefined ->
-            {Locked, Req, State};
-        #{user := User, pass := Pass, url := Url} ->
-            Status =
-                case couch:admin_authenticate(User, Pass, Url) of
-                    true ->
-                        Unlocked;
-                    _ ->
-                        Error
-                end,
-            {Status, Req, State}
-    end.
-
 authenticate(Req0, State) ->
     {ok, Body, Req} = read_body(Req0, <<>>),
     Json = json:decode(Body),
-    #{<<"url">> := Url} = State,
     case Json of
-        #{<<"username">> := User, <<"password">> := Pass} ->
+        #{<<"url">> := Url, <<"username">> := User, <<"password">> := Pass} ->
             case couch:admin_authenticate(User, Pass, Url) of
                 true ->
-                    Status = set_status(Json, Req, State),
+                    Status = set_status(Req, State),
                     {true, cowboy_req:set_resp_body(Status, Req), State};
                 _ ->
-                    {false, Req, State}
+                    Status = authfailed(),
+                    Req1 = cowboy_req:reply(401, #{}, Status, Req),
+                    {true, Req1, State}
             end;
         _ ->
-            {false, Req, State}
+            Status = badformat(),
+            {false, cowboy_req:set_resp_body(Status, Req), State}
     end.
 
-set_status(#{<<"username">> := User, <<"password">> := Pass}, Req, #{<<"url">> := Url}) ->
+locked() ->
+    json:encode(#{<<"status">> => <<"locked">>}).
+
+unlocked() ->
+    json:encode(#{<<"status">> => <<"unlocked">>}).
+
+authfailed() ->
+    json:encode(#{<<"status">> => <<"auth failed">>}).
+
+badformat() ->
+    json:encode(#{<<"status">> => <<"invalid request">>}).
+
+set_status(Req, #{<<"username">> := User, <<"password">> := Pass, <<"url">> := Url}) ->
     ParsedQs = cowboy_req:parse_qs(Req),
     case proplists:get_value(<<"clear">>, ParsedQs) of
         true ->
             persistent_term:erase(admin_info),
-            json:encode(#{<<"status">> => <<"locked">>});
+            locked();
         undefined ->
             AdminInfo = #{user => User, pass => Pass, url => Url},
             persistent_term:put(admin_info, AdminInfo),
-            json:encode(#{<<"status">> => <<"unlocked">>})
+            unlocked()
     end.
 
 read_body(Req0, Acc) ->

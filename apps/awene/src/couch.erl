@@ -1,17 +1,12 @@
 -module(couch).
 
--export([exists/0, exists/1, admin_authenticate/3]).
-
--define(DEFURL, <<"http://127.0.0.1:5984">>).
-
-exists() ->
-    exists(?DEFURL).
+-export([exists/1, admin_authenticate/3]).
 
 exists(Url) ->
     case hackney:head(Url) of
         {ok, Status, _} ->
-            {ok, Status, Url};
-        {error, Reason, Url} ->
+            {ok, Status};
+        {error, Reason, _} ->
             {error, Reason}
     end.
 
