@@ -6,7 +6,7 @@ exists(Url) ->
     case hackney:head(Url) of
         {ok, Status, _} ->
             {ok, Status};
-        {error, Reason, _} ->
+        {error, Reason} ->
             {error, Reason}
     end.
 
@@ -18,7 +18,9 @@ admin_authenticate(User, Pass, Url) ->
         {ok, 401, _, _} ->
             false;
         {ok, 200, _Headers, Body} ->
-            validate_admin_userctx(User, Body)
+            validate_admin_userctx(User, Body);
+        {error, nxdomain} ->
+            false
     end.
 
 validate_admin_userctx(User, Body) ->
