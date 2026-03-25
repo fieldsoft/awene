@@ -4,24 +4,35 @@
 -export([
     init/2,
     allowed_methods/2,
-    content_types_accepted/2
+    content_types_accepted/2,
+    content_types_provided/2
 ]).
 
 %% Handler specific callbacks
 -export([
-    authenticate/2
+    authenticate/2,
+    authenticate_state/2
 ]).
 
 init(Req, _) ->
     {cowboy_rest, Req, #{}}.
 
 allowed_methods(Req, State) ->
-    {[<<"PUT">>], Req, State}.
+    {[<<"PUT">>, <<"GET">>], Req, State}.
 
 content_types_accepted(Req, State) ->
     {
         [
             {{<<"application">>, <<"json">>, []}, authenticate}
+        ],
+        Req,
+        State
+    }.
+
+content_types_provided(Req, State) ->
+    {
+        [
+            {{<<"application">>, <<"json">>, '*'}, authenticate_state}
         ],
         Req,
         State
@@ -34,7 +45,7 @@ authenticate(Req0, State) ->
         #{<<"url">> := Url, <<"username">> := User, <<"password">> := Pass} ->
             case couch:admin_authenticate(User, Pass, Url) of
                 true ->
-                    Status = set_status(Req, State),
+                    Status = set_status(Req, Json),
                     {true, cowboy_req:set_resp_body(Status, Req), State};
                 _ ->
                     Status = authfailed(),
@@ -44,6 +55,14 @@ authenticate(Req0, State) ->
         _ ->
             Status = badformat(),
             {false, cowboy_req:set_resp_body(Status, Req), State}
+    end.
+
+authenticate_state(Req, State) ->
+    case persistent_term:get(admin_info, undefined) of
+        #{<<"url">> := _, <<"username">> := _, <<"password">> := _} ->
+            {locked(), Req, State};
+        undefined ->
+            {unlocked(), Req, State}
     end.
 
 set_status(Req, #{<<"username">> := User, <<"password">> := Pass, <<"url">> := Url}) ->
