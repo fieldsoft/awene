@@ -5,8 +5,8 @@ import gleam/dynamic/decode
 import gleam/http.{Post}
 import gleam/http/response
 import gleam/httpc.{type HttpError}
-import gleam/list
 import gleam/json
+import gleam/list
 import wisp.{type Request, type Response}
 
 pub type AdminInfo {
@@ -106,7 +106,7 @@ fn inspect_body(
   ctx: web.Context,
 ) -> Response {
   let decoded = json.parse(from: json, using: couch_session_decoder())
-  
+
   case decoded {
     Ok(cs) -> inspect_roles(cs.user_ctx, admin_info, ctx)
     Error(_) ->
@@ -120,7 +120,7 @@ fn inspect_roles(
   ctx: web.Context,
 ) -> Response {
   let is_member: Bool = list.contains(user_ctx.roles, "_admin")
-  
+
   case is_member {
     True -> save_credentials(admin_info, ctx)
     False -> wisp.json_response("{\"message\":\"Not authorized.\"}", 401)
@@ -130,7 +130,8 @@ fn inspect_roles(
 fn save_credentials(admin_info: AdminInfo, ctx: web.Context) -> Response {
   let assert Ok(_) = operations.set(ctx.db, "username", admin_info.username)
   let assert Ok(_) = operations.set(ctx.db, "password", admin_info.password)
-  let assert Ok(_) = operations.set(ctx.db, "private_key", admin_info.private_key)
+  let assert Ok(_) =
+    operations.set(ctx.db, "private_key", admin_info.private_key)
   let assert Ok(_) = operations.set(ctx.db, "public_key", admin_info.public_key)
 
   wisp.json_response("{\"message\":\"Unlocked\"}", 200)
