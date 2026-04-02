@@ -15,7 +15,6 @@ pub fn main() -> Nil {
     |> config.key_string()
     |> config.value_string()
     |> config.table_type(config.table_type_set())
-    |> config.access(config.access_private())
     |> config.create()
 
   let context = web.Context(db: table)

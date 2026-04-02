@@ -16,7 +16,7 @@ pub fn verify_auth(
   let creds: String =
     credentials
     |> bit_array.from_string()
-    |> base64_encode(False)
+    |> base64_encode(True)
 
   let req: Request(String) =
     base_req

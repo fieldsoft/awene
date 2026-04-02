@@ -34,15 +34,23 @@ fn admin_info_decoder() -> decode.Decoder(AdminInfo) {
   ))
 }
 
+pub type CouchSession {
+  CouchSession(user_ctx: UserCtx)
+}
+
+fn couch_session_decoder() -> decode.Decoder(CouchSession) {
+  use user_ctx <- decode.field("userCtx", user_ctx_decoder())
+  decode.success(CouchSession(user_ctx:))
+}
+
 pub type UserCtx {
-  UserCtx(db: String, name: String, roles: List(String))
+  UserCtx(name: String, roles: List(String))
 }
 
 pub fn user_ctx_decoder() -> decode.Decoder(UserCtx) {
-  use db <- decode.field("db", decode.string)
   use name <- decode.field("name", decode.string)
   use roles <- decode.field("roles", decode.list(decode.string))
-  decode.success(UserCtx(db:, name:, roles:))
+  decode.success(UserCtx(name:, roles:))
 }
 
 pub fn unlock_handler(req: Request, ctx: web.Context) -> Response {
@@ -97,12 +105,12 @@ fn inspect_body(
   admin_info: AdminInfo,
   ctx: web.Context,
 ) -> Response {
-  let decoded = json.parse(from: json, using: user_ctx_decoder())
-
+  let decoded = json.parse(from: json, using: couch_session_decoder())
+  
   case decoded {
-    Ok(user_ctx) -> inspect_roles(user_ctx, admin_info, ctx)
+    Ok(cs) -> inspect_roles(cs.user_ctx, admin_info, ctx)
     Error(_) ->
-      wisp.json_response("{\"message\":\"CouchDB sending bad JSON.\"}", 502)
+      wisp.json_response("{\"message\":\"CouchDB sent bad JSON.\"}", 502)
   }
 }
 
@@ -112,7 +120,7 @@ fn inspect_roles(
   ctx: web.Context,
 ) -> Response {
   let is_member: Bool = list.contains(user_ctx.roles, "_admin")
-
+  
   case is_member {
     True -> save_credentials(admin_info, ctx)
     False -> wisp.json_response("{\"message\":\"Not authorized.\"}", 401)
@@ -122,8 +130,7 @@ fn inspect_roles(
 fn save_credentials(admin_info: AdminInfo, ctx: web.Context) -> Response {
   let assert Ok(_) = operations.set(ctx.db, "username", admin_info.username)
   let assert Ok(_) = operations.set(ctx.db, "password", admin_info.password)
-  let assert Ok(_) =
-    operations.set(ctx.db, "private_key", admin_info.private_key)
+  let assert Ok(_) = operations.set(ctx.db, "private_key", admin_info.private_key)
   let assert Ok(_) = operations.set(ctx.db, "public_key", admin_info.public_key)
 
   wisp.json_response("{\"message\":\"Unlocked\"}", 200)
