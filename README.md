@@ -1,15 +1,24 @@
-# Awene
+# awene
 
-Menkayonta is offline first. When a project is shared, centralization
-may be required. This service provides an HTTP API for managing databases
-and users.
+[![Package Version](https://img.shields.io/hexpm/v/awene)](https://hex.pm/packages/awene)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/awene/)
 
-- It provides a means of allowing limited admin-level configuration of
-  a couchdb server.
-- Users and roles can be managed within the context of an
-  organization, which may have multiple databases and projects.
-- JWTs are provided that may be used to authenticate with couchdb and
-  ensure correct authorizations.
+```sh
+gleam add awene@1
+```
+```gleam
+import awene
 
-It is expected that admins will use the Menkayonta UI to interact with
-the HTTP API.
+pub fn main() -> Nil {
+  // TODO: An example of the project in use
+}
+```
+
+Further documentation can be found at <https://hexdocs.pm/awene>.
+
+## Development
+
+```sh
+gleam run   # Run the project
+gleam test  # Run the tests
+```
