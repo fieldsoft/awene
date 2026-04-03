@@ -1,4 +1,4 @@
-import awene/couch
+import awene/couch.{type UserCtx, session_decoder}
 import awene/web
 import dream_ets/operations
 import gleam/dynamic/decode
@@ -45,25 +45,6 @@ pub fn admin_info_encoder(admin_info: AdminInfo) -> String {
     #("public_key", json.string(admin_info.public_key)),
   ])
   |> json.to_string
-}
-
-pub type CouchSession {
-  CouchSession(user_ctx: UserCtx)
-}
-
-fn couch_session_decoder() -> decode.Decoder(CouchSession) {
-  use user_ctx <- decode.field("userCtx", user_ctx_decoder())
-  decode.success(CouchSession(user_ctx:))
-}
-
-pub type UserCtx {
-  UserCtx(name: String, roles: List(String))
-}
-
-pub fn user_ctx_decoder() -> decode.Decoder(UserCtx) {
-  use name <- decode.field("name", decode.string)
-  use roles <- decode.field("roles", decode.list(decode.string))
-  decode.success(UserCtx(name:, roles:))
 }
 
 pub fn unlock_handler(req: Request, ctx: web.Context) -> Response {
@@ -169,7 +150,7 @@ fn inspect_body(
   ctx: web.Context,
   f: fn(AdminInfo, web.Context) -> Response,
 ) -> Response {
-  let decoded = json.parse(from: json, using: couch_session_decoder())
+  let decoded = json.parse(from: json, using: session_decoder())
 
   case decoded {
     Ok(cs) -> inspect_roles(cs.user_ctx, admin_info, ctx, f)
