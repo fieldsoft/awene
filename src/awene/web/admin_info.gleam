@@ -61,7 +61,7 @@ fn report_success(_admin_info: AdminInfo, _ctx: web.Context) -> Response {
 }
 
 fn get_status(ctx: web.Context) -> Response {
-  let admin_info_result = check_credentials(ctx)
+  let admin_info_result = get_admin_info(ctx)
 
   case admin_info_result {
     Ok(admin_info) -> check_authorization(admin_info, ctx, report_success)
@@ -80,7 +80,7 @@ fn m(in: Result(Option(String), y)) -> Result(String, String) {
   }
 }
 
-fn check_credentials(ctx: web.Context) -> Result(AdminInfo, String) {
+fn get_admin_info(ctx: web.Context) -> Result(AdminInfo, String) {
   use username <- result.try(m(operations.get(ctx.db, "username")))
   use password <- result.try(m(operations.get(ctx.db, "password")))
   use url <- result.try(m(operations.get(ctx.db, "url")))
