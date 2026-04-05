@@ -1,8 +1,8 @@
 import gleam/bit_array.{base64_encode}
+import gleam/dynamic/decode
 import gleam/http/request.{type Request, prepend_header}
 import gleam/http/response.{type Response}
 import gleam/httpc.{type HttpError}
-import gleam/dynamic/decode
 
 pub type Session {
   Session(user_ctx: UserCtx)
@@ -24,15 +24,15 @@ pub fn user_ctx_decoder() -> decode.Decoder(UserCtx) {
 }
 
 /// Atempts basic auth to the CouchDB _session database and returns the result. On success, a UserCtx object can be inspected to ensure that the authorized user had the correct roles.
-pub fn verify_auth(
+pub fn verify_basic_auth(
   username: String,
   password: String,
   url: String,
 ) -> Result(Response(String), HttpError) {
   let assert Ok(base_req) = request.to(url <> "/_session")
 
-  let credentials : String = username <> ":" <> password
-  
+  let credentials: String = username <> ":" <> password
+
   let creds: String =
     credentials
     |> bit_array.from_string()
