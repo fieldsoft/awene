@@ -1,4 +1,4 @@
-import awene/web/passwords
+import awene/passwords
 
 pub fn hash_test() -> Nil {
   let assert Ok(_) = passwords.hash("bibboy")

@@ -1,8 +1,8 @@
 import awene/couch
 import awene/web
 import awene/web/admin_info.{type AdminInfo}
-import awene/web/jwt
-import awene/web/passwords
+import awene/jwt
+import awene/passwords
 import gleam/dynamic/decode
 import gleam/http.{Post}
 import gleam/http/response

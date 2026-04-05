@@ -1,6 +1,6 @@
 import awene_test.{admin_info_setup}
 import awene/web/admin_info.{type AdminInfo}
-import awene/web/jwt
+import awene/jwt
 import gleam/json
 
 pub fn http_jwt_sign_test() {

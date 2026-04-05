@@ -2,7 +2,7 @@ import gleam/bit_array
 import gleam/dynamic/decode
 import gleam/json
 import gleam/string
-import awene/web/rsa
+import awene/rsa
 
 pub type Jwt {
   Jwt(header: Header, claims: Claims)

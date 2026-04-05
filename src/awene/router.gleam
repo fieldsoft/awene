@@ -8,6 +8,7 @@ pub fn handle_request(req: Request, ctx: web.Context) -> Response {
 
   case wisp.path_segments(req) {
     ["unlock"] -> unlock.unlock_handler(req, ctx)
+//    ["init"] -> initialize.init_handler(req, ctx)
     ["login"] -> auth.auth_handler(req, ctx)
     _ -> wisp.not_found()
   }
