@@ -30,7 +30,28 @@ pub fn verify_basic_auth(
   url: String,
 ) -> Result(Response(String), HttpError) {
   let assert Ok(base_req) = request.to(url <> "/_session")
+  let req = prep_basic_auth(username, password, base_req)
 
+  httpc.send(req)
+}
+
+pub fn get_user_info(
+  target: String,
+  username: String,
+  password: String,
+  url: String,
+) -> Result(Response(String), HttpError) {
+  let assert Ok(base_req) = request.to(url <> "/awene/user:" <> target)
+  let req = prep_basic_auth(username, password, base_req)
+
+  httpc.send(req)
+}
+
+fn prep_basic_auth(
+  username: String,
+  password: String,
+  req: Request(body),
+) -> Request(body) {
   let credentials: String = username <> ":" <> password
 
   let creds: String =
@@ -38,13 +59,10 @@ pub fn verify_basic_auth(
     |> bit_array.from_string()
     |> base64_encode(True)
 
-  let req: Request(String) =
-    base_req
-    |> prepend_header(
-      "www-authenticate",
-      "Basic realm=\"None\", charset=\"UTF-8\"",
-    )
-    |> prepend_header("authorization", "Basic " <> creds)
-
-  httpc.send(req)
+  req
+  |> prepend_header(
+    "www-authenticate",
+    "Basic realm=\"None\", charset=\"UTF-8\"",
+  )
+  |> prepend_header("authorization", "Basic " <> creds)
 }
