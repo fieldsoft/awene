@@ -1,6 +1,9 @@
 import gleam/bit_array.{base64_encode}
 import gleam/dynamic/decode
-import gleam/http/request.{type Request, prepend_header}
+import gleam/http.{Delete, Put}
+import gleam/http/request.{
+  type Request, prepend_header, set_body, set_method, set_path,
+}
 import gleam/http/response.{type Response}
 import gleam/httpc.{type HttpError}
 
@@ -29,8 +32,10 @@ pub fn verify_basic_auth(
   password: String,
   url: String,
 ) -> Result(Response(String), HttpError) {
-  let assert Ok(base_req) = request.to(url <> "/_session")
-  let req = prep_basic_auth(username, password, base_req)
+  let assert Ok(base_req) =
+    request.to(url <> "/_session")
+      
+  let req = set_basic_auth(base_req, username, password)
 
   httpc.send(req)
 }
@@ -42,15 +47,108 @@ pub fn get_user_info(
   url: String,
 ) -> Result(Response(String), HttpError) {
   let assert Ok(base_req) = request.to(url <> "/awene/user:" <> target)
-  let req = prep_basic_auth(username, password, base_req)
+
+  let req = set_basic_auth(base_req, username, password)
 
   httpc.send(req)
 }
 
-fn prep_basic_auth(
+pub fn create_db(
+  target: String,
   username: String,
   password: String,
+  url: String,
+) -> Result(Response(String), HttpError) {
+  let assert Ok(base_req) = request.to(url <> "/" <> target)
+
+  let req =
+    base_req
+    |> set_basic_auth(username, password)
+    |> set_method(Put)
+
+  httpc.send(req)
+}
+
+pub fn delete_db(
+  target: String,
+  username: String,
+  password: String,
+  url: String,
+) -> Result(Response(String), HttpError) {
+  let assert Ok(base_req) = request.to(url <> "/" <> target)
+
+  let req =
+    base_req
+    |> set_basic_auth(username, password)
+    |> set_method(Delete)
+
+  httpc.send(req)
+}
+
+pub fn user(
+  target: String,
+  username: String,
+  password: String,
+  url: String,
+) -> Result(Response(String), HttpError) {
+  let assert Ok(base_req) = request.to(url <> "/awene")
+
+  let req =
+    base_req
+    |> set_basic_auth(username, password)
+    |> set_method(Put)
+    |> set_body(target)
+    |> prepend_header("content-type", "application/json")
+
+  httpc.send(req)
+}
+
+pub fn set_public_key(
+  kid: String,
+  public_key_json: String,
+  username: String,
+  password: String,
+  url: String,
+) -> Result(Response(String), HttpError) {
+  let auth_path = "/_node/_local/_config/chttpd/authentication_handlers"
+  let auth_value =
+    "\"{chttpd_auth, cookie_authentication_handler}, {chttpd_auth, jwt_authentication_handler}, {chttpd_auth, default_authentication_handler}\""
+  let key_path = "/_node/_local/_config/jwt_keys/rsa:" <> kid
+
+  let assert Ok(base_req) = request.to(url)
+
+  let req =
+    base_req
+    |> set_basic_auth(username, password)
+    |> prepend_header("content-type", "application/json")
+    |> set_method(Put)
+
+  let auth_req =
+    req
+    |> set_path(auth_path)
+    |> set_body(auth_value)
+
+  let key_req =
+    req
+    |> set_path(key_path)
+    |> set_body(public_key_json)
+
+  let auth_resp = httpc.send(auth_req)
+
+  case auth_resp {
+    Ok(resp) ->
+      case resp.status {
+        200 -> httpc.send(key_req)
+        _ -> auth_resp
+      }
+    Error(_) -> auth_resp
+  }
+}
+
+fn set_basic_auth(
   req: Request(body),
+  username: String,
+  password: String,
 ) -> Request(body) {
   let credentials: String = username <> ":" <> password
 

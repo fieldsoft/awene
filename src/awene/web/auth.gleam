@@ -1,5 +1,6 @@
 import awene/couch
 import awene/web
+import awene/web/awene_user.{type AweneUser, awene_user_decoder, user_cred_decoder}
 import awene/web/admin_info.{type AdminInfo}
 import awene/jwt
 import awene/passwords
@@ -11,14 +12,6 @@ import gleam/json
 import gleam/string
 import wisp.{type Request, type Response}
 
-type UserCred {
-  UserCred(username: String, password: String)
-}
-
-type AweneUser {
-  AweneUser(id: String, rev: String, password_hash: String, roles: List(String))
-}
-
 type RespObj {
   RespObj(access_token: String, token_type: String)
 }
@@ -29,20 +22,6 @@ fn resp_obj_encoder(resp: RespObj) -> String {
     #("token_type", json.string(resp.token_type)),
   ])
   |> json.to_string()
-}
-
-fn user_cred_decoder() -> decode.Decoder(UserCred) {
-  use username <- decode.field("username", decode.string)
-  use password <- decode.field("password", decode.string)
-  decode.success(UserCred(username:, password:))
-}
-
-fn awene_user_decoder() -> decode.Decoder(AweneUser) {
-  use id <- decode.field("_id", decode.string)
-  use rev <- decode.field("_rev", decode.string)
-  use password_hash <- decode.field("password_hash", decode.string)
-  use roles <- decode.field("roles", decode.list(decode.string))
-  decode.success(AweneUser(id:, rev:, password_hash:, roles:))
 }
 
 pub fn auth_handler(req: Request, ctx: web.Context) -> Response {
