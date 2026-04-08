@@ -19,7 +19,7 @@ pub type Algorithm {
 
 /// These are the couchdb specific claims that are supported.
 pub type Claims {
-  Claims(sub: String, roles: List(String))
+  Claims(sub: String, roles: List(String), exp: Int)
 }
 
 pub fn jwt_decoder() -> decode.Decoder(Jwt) {
@@ -37,7 +37,8 @@ pub fn header_decoder() -> decode.Decoder(Header) {
 pub fn claims_decoder() -> decode.Decoder(Claims) {
   use sub <- decode.field("sub", decode.string)
   use roles <- decode.field("_couchdb.roles", decode.list(of: decode.string))
-  decode.success(Claims(sub:, roles:))
+  use exp <- decode.field("exp", decode.int)
+  decode.success(Claims(sub:, roles:, exp:))
 }
 
 pub fn jwt_encoder(jwt: Jwt) -> String {
@@ -62,7 +63,8 @@ pub fn header_encoder(header: Header) -> String {
 fn json_claims(claims: Claims) -> json.Json {
   json.object([
     #("sub", json.string(claims.sub)),
-    #("_couchdb.roles", json.array(claims.roles, of: json.string)),
+    #("_couchdb.roles", json.array(claims.roles, json.string)),
+    #("exp", json.int(claims.exp)),
   ])
 }
 

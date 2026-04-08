@@ -19,7 +19,7 @@ pub fn jwt_header_json_test() {
 }
 
 pub fn jwt_claims_json_test() {
-  let claims = jwt.Claims(sub: "user", roles: [])
+  let claims = jwt.Claims(sub: "user", roles: [], exp: 0)
   let claims_encoded = jwt.claims_encoder(claims)
   let assert Ok(claims_decoded) = json.parse(from: claims_encoded, using: jwt.claims_decoder())
   assert claims_decoded == claims
@@ -29,7 +29,7 @@ fn jwt_sign_test(admin_info: AdminInfo) -> Nil {
   let jwt =
     jwt.Jwt(
       header: jwt.Header(alg: jwt.RS256, kid: admin_info.key_id),
-      claims: jwt.Claims(sub: "user", roles: []),
+      claims: jwt.Claims(sub: "user", roles: [], exp: 0),
     )
 
   let assert Ok(_jwt_signed) = jwt.encode(jwt, admin_info.private_key)
@@ -41,7 +41,7 @@ fn jwt_verify_test(admin_info: AdminInfo) -> Nil {
   let jwt =
     jwt.Jwt(
       header: jwt.Header(alg: jwt.RS256, kid: admin_info.key_id),
-      claims: jwt.Claims(sub: "user", roles: []),
+      claims: jwt.Claims(sub: "user", roles: [], exp: 0),
     )
 
   let assert Ok(jwt_signed) = jwt.encode(jwt, admin_info.private_key)

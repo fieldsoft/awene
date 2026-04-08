@@ -39,6 +39,17 @@ pub fn verify_basic_auth(
   httpc.send(req)
 }
 
+pub fn verify_jwt_auth(
+  token: String,
+  url: String,
+) -> Result(Response(String), HttpError) {
+  let assert Ok(base_req) = request.to(url <> "/_session")
+
+  let req = prepend_header(base_req, "authorization", "Bearer " <> token)
+
+  httpc.send(req)
+}
+
 pub fn get_user_info(
   target: String,
   username: String,

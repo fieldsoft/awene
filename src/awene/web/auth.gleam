@@ -7,23 +7,32 @@ import awene/web/awene_user.{
   type AweneUser, awene_user_decoder, user_cred_decoder,
 }
 import gleam/dynamic/decode
+import gleam/float
 import gleam/http.{Post}
 import gleam/http/response
 import gleam/httpc.{type HttpError}
 import gleam/json
 import gleam/string
+import gleam/time/duration
+import gleam/time/timestamp
 import wisp.{type Request, type Response}
 
-type RespObj {
+pub type RespObj {
   RespObj(access_token: String, token_type: String)
 }
 
-fn resp_obj_encoder(resp: RespObj) -> String {
+pub fn resp_obj_encoder(resp: RespObj) -> String {
   json.object([
     #("access_token", json.string(resp.access_token)),
     #("token_type", json.string(resp.token_type)),
   ])
   |> json.to_string()
+}
+
+pub fn resp_obj_decoder() -> decode.Decoder(RespObj) {
+  use access_token <- decode.field("access_token", decode.string)
+  use token_type <- decode.field("token_type", decode.string)
+  decode.success(RespObj(access_token:, token_type:))
 }
 
 pub fn auth_handler(req: Request, ctx: web.Context) -> Response {
@@ -81,11 +90,11 @@ fn process_server_response_step(
     200 -> inspect_body_step(resp.body, password, admin_info)
     401 ->
       wisp.json_response("{\"message\":\"CouchDB authorization failed.\"}", 502)
-    otherwise -> wisp.json_response(resp.body, resp.status)
-    // wisp.json_response(
-    //   "{\"message\":\"CouchDB had non-200 status.\"}",
-    //   otherwise,
-    // )
+    otherwise ->
+      wisp.json_response(
+        "{\"message\":\"CouchDB had non-200 status.\"}",
+        otherwise,
+      )
   }
 }
 
@@ -120,12 +129,18 @@ fn create_and_sign_jwt_step(
   awene_user: AweneUser,
   admin_info: AdminInfo,
 ) -> Response {
+  let exp_time =
+    timestamp.system_time()
+    |> timestamp.add(duration.hours(1))
+    |> timestamp.to_unix_seconds()
+    |> float.round
+
   case string.split(awene_user.id, ":") {
     [_, user] -> {
       let token =
         jwt.Jwt(
           header: jwt.Header(alg: jwt.RS256, kid: admin_info.key_id),
-          claims: jwt.Claims(sub: user, roles: awene_user.roles),
+          claims: jwt.Claims(sub: user, roles: awene_user.roles, exp: exp_time),
         )
       let result = jwt.encode(token, admin_info.private_key)
 

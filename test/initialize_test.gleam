@@ -1,6 +1,5 @@
-import awene/couch
 import awene/web/admin_info.{type AdminInfo}
-import awene/web/awene_user.{type UserCred, UserCred, user_cred_encoder}
+import awene/web/awene_user.{UserCred, user_cred_encoder}
 import awene_test.{admin_info_setup, localurl, http_clean}
 import gleam/http.{Post}
 import gleam/http/request.{prepend_header, set_body, set_method}
