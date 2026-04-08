@@ -6,6 +6,7 @@ import gleam/erlang/process
 import gleam/io
 import gleam/result
 import gleeunit
+import awene/couch
 
 pub const localurl = "http://localhost:8080"
 
@@ -21,6 +22,17 @@ pub fn admin_info_setup(f: fn(AdminInfo) -> Nil) -> Nil {
     Ok(value) -> f(value)
     Error(_) -> io.println("Set TEST_* values in .env to run HTTP API tests")
   }
+}
+
+pub fn http_clean(admin_info: AdminInfo) -> Nil {
+  let assert Ok(resp) =
+    couch.delete_db(
+      "awene",
+      admin_info.username,
+      admin_info.password,
+      admin_info.url,
+    )
+  assert resp.status == 200 || resp.status == 404
 }
 
 fn admin_info_from_env() -> Result(AdminInfo, String) {

@@ -2,13 +2,12 @@ import awene/couch
 import awene/passwords
 import awene/web
 import awene/web/admin_info.{type AdminInfo}
-import awene/web/awene_user.{
-  AweneUser, awene_user_encode, user_cred_decoder,
-}
+import awene/web/awene_user.{AweneUser, new_awene_user_encode, user_cred_decoder}
 import gleam/dynamic/decode
 import gleam/http.{Post}
 import gleam/json
 import gleam/option.{None}
+import gleam/string
 import wisp.{type Request, type Response}
 
 pub fn init_handler(req: Request, ctx: web.Context) -> Response {
@@ -90,11 +89,12 @@ fn create_awene_user_step(admin_info: AdminInfo) -> Response {
       password_hash: password_hash,
       roles: ["awene"],
     )
-    |> awene_user_encode()
+    |> new_awene_user_encode()
 
   let server_resp =
     couch.user(
       awene_user,
+      "user:awene@example.com",
       admin_info.username,
       admin_info.password,
       admin_info.url,
@@ -121,7 +121,7 @@ fn create_awene_user_step(admin_info: AdminInfo) -> Response {
           )
         otherwise ->
           wisp.json_response(
-            "{\"message\":\"CouchDB had non-200 status.\"}",
+            "{\"message\":\"When creating awene user, couchDB had non-200 status.\"}",
             otherwise,
           )
       }
@@ -134,6 +134,8 @@ fn create_awene_user_step(admin_info: AdminInfo) -> Response {
 fn set_public_key_step(admin_info: AdminInfo) {
   let public_key_json =
     admin_info.public_key
+    |> string.split("\n")
+    |> string.join("\\n")
     |> json.string()
     |> json.to_string()
 
@@ -162,7 +164,7 @@ fn set_public_key_step(admin_info: AdminInfo) {
           )
         otherwise ->
           wisp.json_response(
-            "{\"message\":\"CouchDB had non-200 status.\"}",
+            "{\"message\":\"When setting public key, couchDB had non-200 status.\"}",
             otherwise,
           )
       }

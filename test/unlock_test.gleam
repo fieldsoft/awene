@@ -60,7 +60,7 @@ fn http_unlock_get_after_delete() -> Nil {
   assert "{\"message\":\"Locked\"}" == resp.body
 }
 
-fn http_unlock_post(admin_info: AdminInfo) -> Nil {
+pub fn http_unlock_post(admin_info: AdminInfo) -> Nil {
   let json = admin_info.admin_info_encoder(admin_info)
 
   let assert Ok(unlock_req) = request.to(localurl <> "/unlock")

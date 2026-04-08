@@ -32,9 +32,8 @@ pub fn verify_basic_auth(
   password: String,
   url: String,
 ) -> Result(Response(String), HttpError) {
-  let assert Ok(base_req) =
-    request.to(url <> "/_session")
-      
+  let assert Ok(base_req) = request.to(url <> "/_session")
+
   let req = set_basic_auth(base_req, username, password)
 
   httpc.send(req)
@@ -86,18 +85,19 @@ pub fn delete_db(
 }
 
 pub fn user(
-  target: String,
+  json: String,
+  userid: String,
   username: String,
   password: String,
   url: String,
 ) -> Result(Response(String), HttpError) {
-  let assert Ok(base_req) = request.to(url <> "/awene")
+  let assert Ok(base_req) = request.to(url <> "/awene/" <> userid)
 
   let req =
     base_req
     |> set_basic_auth(username, password)
     |> set_method(Put)
-    |> set_body(target)
+    |> set_body(json)
     |> prepend_header("content-type", "application/json")
 
   httpc.send(req)
@@ -136,11 +136,12 @@ pub fn set_public_key(
   let auth_resp = httpc.send(auth_req)
 
   case auth_resp {
-    Ok(resp) ->
+    Ok(resp) -> {
       case resp.status {
         200 -> httpc.send(key_req)
         _ -> auth_resp
       }
+    }
     Error(_) -> auth_resp
   }
 }

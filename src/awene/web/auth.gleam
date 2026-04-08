@@ -1,9 +1,11 @@
 import awene/couch
-import awene/web
-import awene/web/awene_user.{type AweneUser, awene_user_decoder, user_cred_decoder}
-import awene/web/admin_info.{type AdminInfo}
 import awene/jwt
 import awene/passwords
+import awene/web
+import awene/web/admin_info.{type AdminInfo}
+import awene/web/awene_user.{
+  type AweneUser, awene_user_decoder, user_cred_decoder,
+}
 import gleam/dynamic/decode
 import gleam/http.{Post}
 import gleam/http/response
@@ -79,11 +81,11 @@ fn process_server_response_step(
     200 -> inspect_body_step(resp.body, password, admin_info)
     401 ->
       wisp.json_response("{\"message\":\"CouchDB authorization failed.\"}", 502)
-    otherwise ->
-      wisp.json_response(
-        "{\"message\":\"CouchDB had non-200 status.\"}",
-        otherwise,
-      )
+    otherwise -> wisp.json_response(resp.body, resp.status)
+    // wisp.json_response(
+    //   "{\"message\":\"CouchDB had non-200 status.\"}",
+    //   otherwise,
+    // )
   }
 }
 
